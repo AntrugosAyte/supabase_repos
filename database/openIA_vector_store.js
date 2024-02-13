@@ -1,32 +1,42 @@
-const { Bedrock } = require("@langchain/community/llms/bedrock");
-// Or, from web environments:
-// import { Bedrock } from "@langchain/community/llms/bedrock/web";
+const { SupabaseVectorStore } = require("@langchain/community/vectorstores/supabase");
+const { BedrockEmbeddings } = require("@langchain/community/embeddings/bedrock");
+const { createClient } = require("@supabase/supabase-js");
 
-// If no credentials are provided, the default credentials from
-// @aws-sdk/credential-provider-node will be used.
-const model = new Bedrock({
-  model: "ai21.j2-grande-instruct", // You can also do e.g. "anthropic.claude-v2"
-  region: "us-east-1",
-  // endpointUrl: "custom.amazonaws.com",
-  // credentials: {
-  //   accessKeyId: process.env.BEDROCK_AWS_ACCESS_KEY_ID!,
-  //   secretAccessKey: process.env.BEDROCK_AWS_SECRET_ACCESS_KEY!,
-  // },
-  // modelKwargs: {},
+const privateKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN1dmVzbXRncGd2cm1idndla3d2Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTcwNzc1NDkwNCwiZXhwIjoyMDIzMzMwOTA0fQ.FD_fJppcKjSymfv3MAu31mlo74_S20I-YDXC4gEcmCE';
+const url = 'https://suvesmtgpgvrmbvwekwv.supabase.co';
+
+
+let embeddings = new BedrockEmbeddings({
+  region: 'us-east-1',
+  model: "amazon.titan-embed-text-v1"
 });
 
-async function getDataSupabase() {
-
-    const res = await model.invoke("Tell me a joke");
-    console.log(res);
-}
-
-getDataSupabase();
-
-/*
+const client = createClient(url, privateKey);
 
 
-  Why was the math book unhappy?
+const vectorStore = new SupabaseVectorStore(
+  embeddings,
+  {
+    client: client,
+    tableName: "documents",
+    queryName: "match_documents",
+  }
+);
 
-  Because it had too many problems!
-*/
+async function indexDocuments () {
+  const vectorStoreData = await vectorStore.fromTexts(
+    ["Hello world", "Bye bye", "What's this?"],
+    [{ id: 2 }, { id: 1 }, { id: 3 }],
+  );
+  console.info(vectorStoreData);
+};
+
+indexDocuments();
+
+
+// const run = async () => {
+//   const resultOne = await vectorStore.similaritySearch("Hello world", 1);
+//   console.log(resultOne);
+// }
+
+// console.log(run)
